@@ -1,23 +1,6 @@
 import pickle
-import itertools
+from nltk.stem import PorterStemmer
 
-"""
-search_result
-{(url1, 3), {url2, 4}}
-
-urls
-{url1, url2}
-
-new
-{(url2, 5), (url6, 2)...}
-
-search_result
-{(url2, 9)}
-
-urls
-{url2}
-
-"""
 
 def search_request(request, index):
     if not request:
@@ -57,6 +40,7 @@ def create_temp_index():
 if __name__ == '__main__':
     print("Loading index...")
     index = get_index()
+    ps = PorterStemmer()
     print("Loaded!")
     # index = create_temp_index()
     
@@ -65,9 +49,9 @@ if __name__ == '__main__':
         if(request == "exit"):
             break
         
-        tokens = [token for token in request.strip().split(" ") if token != "AND"]
+        tokens = [ps.stem(token) for token in request.strip().split(" ") if token != "AND"]
         results = search_request(tokens, index)[:5]
-        
+
         if(results == []):
             print("No results found!")
         else:
