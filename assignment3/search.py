@@ -1,4 +1,5 @@
 import pickle
+import itertools
 
 def search_request(request, index):
     if(index.get(request[0]) == None):
@@ -14,7 +15,7 @@ def search_request(request, index):
 
 def get_index():
     with open('index.pickle', 'rb') as file:
-        index = pickle.load(file)
+        return pickle.load(file)
     
 
 def create_temp_index(): 
@@ -22,8 +23,8 @@ def create_temp_index():
 
 
 if __name__ == '__main__':
-    index = get_index()
-    #index = create_temp_index()
+    # index = get_index()
+    index = create_temp_index()
     
     while True:
         request = input('Query: ')
@@ -32,6 +33,7 @@ if __name__ == '__main__':
         
         tokens = [token for token in request.strip().split(" ") if token != "AND"]
         result = search_request(tokens, index)
+        # result = list(itertools.islice(search_request(tokens, index), 5))
         if(result == []):
             print("No results found!")
         else:
