@@ -1,7 +1,6 @@
 import pickle
-index = {}
 
-def search_request(request):
+def search_request(request, index):
     if(index.get(request[0]) == None):
         return []
     search_result = [x[0] for x in index.get(request[0])] #get list of urls
@@ -26,18 +25,14 @@ if __name__ == '__main__':
     index = get_index()
     #index = create_temp_index()
     
-    while(1):
-        request = input('enter your search: ')
+    while True:
+        request = input('Query: ')
         if(request == "exit"):
             break
         
-        index = create_temp_index()
-        tokens = request.strip().split(" ")
-        result = search_request(tokens)
+        tokens = [token for token in request.strip().split(" ") if token != "AND"]
+        result = search_request(tokens, index)
         if(result == []):
             print("No results found!")
         else:
             print(result)
-
-        
-
