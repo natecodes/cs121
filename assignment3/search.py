@@ -1,3 +1,4 @@
+import time
 import pickle
 from nltk.stem import PorterStemmer
 
@@ -41,18 +42,19 @@ if __name__ == '__main__':
     print("Loading index...")
     index = get_index()
     ps = PorterStemmer()
-    print("Loaded!")
-    # index = create_temp_index()
+    print("Loaded!\n")
     
     while True:
         request = input('Query: ')
         if(request == "exit"):
             break
         
-        tokens = [ps.stem(token) for token in request.strip().split(" ") if token != "AND"]
+        start = time.time()
+        tokens = [ps.stem(token) for token in request.strip().split(" ")]
         results = search_request(tokens, index)[:5]
 
         if(results == []):
             print("No results found!")
         else:
-            print(results)
+            print("\n".join([f"... {i}) {result}" for i, result in enumerate(results, start=1)]))
+        print(f"Found in ~{int((time.time() - start) * 1000)} milliseconds.\n")
