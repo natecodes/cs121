@@ -39,16 +39,14 @@ def get_text_from_html(html):
 def get_important_text_from_html(html):
     """Get the important text from the html"""
     soup = BeautifulSoup(html, "html.parser")
-    #important_text = defaultdict(lambda: defaultdict(int)) 
     important_text = defaultdict(dict)
-    html_tags = ['b', 'strong', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
-    for tag in html_tags:
+    #html_tags = ['b', 'strong', 'title', 'h1', 'h2', 'h3']
+    html_tags = {'b':2, 'strong':2, 'title':5, 'h1':3, 'h2':3, 'h3':3}
+    for tag in html_tags.keys():
         for found_text in soup.find_all(tag):
             text_tokens = tokenize(found_text.text.strip())
             for token,count in text_tokens.items():
-                # if(token not in important_text):
-                #     important_text[token]
-                important_text[token][tag]=count
+                important_text[token][tag]=count*html_tags[tag]
 
     return important_text
 
@@ -108,7 +106,6 @@ class Posting:
     def __repr__(self):
         return f"Posting({self._docid}, {self._tf}, {self._fields})"
 
-
 def create_indexes(directory) -> None:
     """Create the indexes"""
     global document_count, urls
@@ -129,7 +126,7 @@ def create_indexes(directory) -> None:
 
         document_count += 1
         urls[document_count] = url
-
+       
         #parse out important tokens
         important_text = get_important_text_from_html(html)
 
@@ -191,6 +188,7 @@ def merge_indexes() -> int:
     out_file = open("index2.pickle", 'wb')
 
     output = dict()
+    freq = defaultdict(int)
     while len(completed_files) != len(batch_files): # loop through until all files are completed
         target = min([buff[0] for i, buff in enumerate(read_buffers) if i not in completed_files])
         output[target] = dict()
@@ -201,18 +199,33 @@ def merge_indexes() -> int:
 
             if buff[0] == target: # token match, tack it on and increase that buffer
                 for posting in buff[1]:
-                    output[target][posting.docid()] = posting.tf() * math.log(document_count/idf)
-
+                    #print(posting)
+                    fields_tf = 0 if posting.fields() == None else sum(posting.fields().values())
+                    output[target][posting.docid()] = posting.tf()+fields_tf # * math.log(document_count/idf)
+                    freq[target]+=1
+                    # print(f"target: {target}")
+                    # print(f"freq: {freq}")
+                    # print(f"output: {output}")
+                    # time.sleep(5)
                 try:
                     read_buffers[i] = pickle.load(batch_files[i])
                 except EOFError:
                     completed_files.add(i)
+        #checking target/freq/output currently
+        #print(f"target: {target}")
+        #print(f"freq: {freq}")
+        #print(f"output: {output}")
+        #time.sleep(5)
         index_length += 1
 
         if index_length % MERGE_CHUNK_SIZE == 0: # write to out file in chunks
             pickle.dump(output, out_file)
             print(f"Merged {index_length} tokens")
             output = dict()
+
+    for token in output:
+        idf = freq[token]
+        output[token].update({key: output[token][key] * math.log(document_count/idf) for key in output[token].keys()})
 
     pickle.dump(output, out_file)
 
@@ -226,7 +239,7 @@ def merge_indexes() -> int:
 
 
 if __name__ == "__main__":
-    create_indexes("DEV")
+    #create_indexes("DEV")
     num_tokens = merge_indexes()
 
     print(f"Number of tokens: {num_tokens}")
