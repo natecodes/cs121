@@ -113,8 +113,6 @@ def create_indexes(directory) -> None:
 
         #parse out important tokens
         important_text = get_important_text_from_html(html)
-        # print(url)
-        # print(important_text)
 
         #parse out anchor tokens
         #anchor_tokens = get_anchor_text_from_html(html)
@@ -131,13 +129,14 @@ def create_indexes(directory) -> None:
             else:
                 index[token].append(Posting(document_count, count, None))
         
-        print(index)
-        time.sleep(30)
+        # print(index)
+        #time.sleep(30)
+        #adds tokens found in html tags that arent found in the text to the index
         # for token in important_text:
         #     if token not in index:
         #         index[token] = []     
         #     index[token].append(Posting(document_count, 0, important_text[token]))   
-
+        
         if document_count % 1000 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
 
