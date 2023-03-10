@@ -6,6 +6,7 @@ import re
 import time
 import itertools
 from collections import Counter
+from collections import defaultdict
 from bs4 import BeautifulSoup
 import nltk
 from nltk.tokenize import word_tokenize
@@ -30,8 +31,32 @@ def get_text_from_html(html):
     soup = BeautifulSoup(html, "html.parser")
     return soup.get_text()
 
+def get_important_text_from_html(html):
+    """Get the important text from the html"""
+    soup = BeautifulSoup(html, "html.parser")
+    #important_text = defaultdict(lambda: defaultdict(int)) 
+    important_text = defaultdict(dict)
+    html_tags = ['b', 'strong', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+    for tag in html_tags:
+        for found_text in soup.find_all(tag):
+            text_tokens = tokenize(found_text.text.strip())
+            for token,count in text_tokens.items():
+                # if(token not in important_text):
+                #     important_text[token]
+                important_text[token][tag]=count
+
+    return important_text
+
+def get_anchor_text_from_html(html):
+    """Get the anchor text from the html"""
+    soup = BeautifulSoup(html, "html.parser")
+    anchor_text = []
+    for t in soup.find_all('a'):
+        anchor_text.append(t.text.strip())
+    return anchor_text
+
 def is_valid_token(input_token):
-    pattern = r'^[a-zA-Z0-9_.-!@#$%^&*()+=?\'\"]+$'
+    pattern = r'^[a-zA-Z0-9_.\-!@#$%^&*()+=?\'\"]+$'
     return bool(re.match(pattern, input_token))
 
 def tokenize(raw_text):
@@ -86,13 +111,32 @@ def create_indexes(directory) -> None:
         document_count += 1
         urls[document_count] = url
 
+        #parse out important tokens
+        important_text = get_important_text_from_html(html)
+        # print(url)
+        # print(important_text)
+
+        #parse out anchor tokens
+        #anchor_tokens = get_anchor_text_from_html(html)
+
         # parse out the tokens
         text = get_text_from_html(html)
         tokens = tokenize(text)
         for token, count in tokens.items(): # add each token to the index
             if token not in index:
                 index[token] = []
-            index[token].append(Posting(document_count, count, None))
+            if token in important_text:
+                index[token].append(Posting(document_count, count, important_text[token]))
+                important_text.pop(token)
+            else:
+                index[token].append(Posting(document_count, count, None))
+        
+        print(index)
+        time.sleep(30)
+        # for token in important_text:
+        #     if token not in index:
+        #         index[token] = []     
+        #     index[token].append(Posting(document_count, 0, important_text[token]))   
 
         if document_count % 1000 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
