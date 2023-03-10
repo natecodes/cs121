@@ -130,8 +130,8 @@ def create_indexes(directory) -> None:
 def sort_and_write_to_disk(index: dict, filename: str) -> None:
     """Sort the given index and pickle it out to disk"""
     with open(filename, 'wb') as batch:
-        for doc_id in sorted(index):
-            pickle.dump((doc_id, sorted(index[doc_id])), batch)
+        for token in sorted(index):
+            pickle.dump((token, sorted(index[token])), batch)
 
 def merge_indexes() -> int:
     """Merge all temporary indices in the batches/ directory into one index, returning its length."""

@@ -30,8 +30,10 @@ def search_request(request, index):
 
 
 def get_index():
-    with open('index.pickle', 'rb') as file:
-        return pickle.load(file)
+    index = dict()
+    with open('index2.pickle', 'rb') as file:
+        index |= pickle.load(file)
+    return index
     
 
 def create_temp_index(): 
@@ -44,17 +46,17 @@ if __name__ == '__main__':
     ps = PorterStemmer()
     print("Loaded!\n")
     
-    while True:
-        request = input('Query: ')
-        if(request == "exit"):
-            break
+    # while True:
+    #     request = input('Query: ')
+    #     if(request == "exit"):
+    #         break
         
-        start = time.time()
-        tokens = [ps.stem(token) for token in request.strip().split(" ")]
-        results = search_request(tokens, index)[:5]
+    #     start = time.time()
+    #     tokens = [ps.stem(token) for token in request.strip().split(" ")]
+    #     results = search_request(tokens, index)[:5]
 
-        if(results == []):
-            print("No results found!")
-        else:
-            print("\n".join([f"... {i}) {result}" for i, result in enumerate(results, start=1)]))
-        print(f"Found in ~{int((time.time() - start) * 1000)} milliseconds.\n")
+    #     if(results == []):
+    #         print("No results found!")
+    #     else:
+    #         print("\n".join([f"... {i}) {result}" for i, result in enumerate(results, start=1)]))
+    #     print(f"Found in ~{int((time.time() - start) * 1000)} milliseconds.\n")
