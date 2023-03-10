@@ -15,7 +15,11 @@ nltk.download('punkt')
 document_count = 0  # total count of all documents
 urls = {}  # map of document_id to actual url
 BATCH_SIZE = 10_000  # number of documents to parse before offloading to disk
-MERGE_CHUNK_SIZE = 100_000  # number of lines to read at a time when merging files 
+MERGE_CHUNK_SIZE = 100_000  # number of lines to read at a time when merging files
+
+def compute_tf_idf(tf, idf):
+    global document_count
+    return tf * math.log(document_count/idf)
 
 def iterate_through_directory(directory):
     """Iterate through the directory and return a list of files"""
@@ -60,7 +64,7 @@ class Posting:
         self._docid = docid
         self._tfidf = tfidf # just length for now
         self._fields = fields
-    
+
     def __lt__(self, other):
         if not isinstance(other, Posting):
             return NotImplemented
@@ -180,7 +184,7 @@ if __name__ == "__main__":
     # # # pickle the index
     # # with open("index.pickle", "wb") as f:
     # #     pickle.dump(index, f)
-    
+
     # # pickle the url map
     # with open("urls.pickle", "wb") as f:
     #     pickle.dump(urls, f)
