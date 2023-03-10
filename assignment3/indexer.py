@@ -49,13 +49,13 @@ def tokenize(raw_text):
 
     # # remove non alphanumeric tokens
 
-    # tokens = [token for token in tokens if is_valid_token(token)]
+    tokens = [token for token in tokens if is_valid_token(token)]
 
-    # # remove tokens that are only 1 character long
-    # tokens = [token for token in tokens if len(token) > 1]
+    # remove tokens that are only 1 character long
+    tokens = [token for token in tokens if len(token) > 1]
 
-    # # lowercase all tokens
-    # tokens = [token.lower() for token in tokens]
+    # lowercase all tokens
+    tokens = [token.lower() for token in tokens]
 
     return Counter(tokens)
 
