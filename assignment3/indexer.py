@@ -16,7 +16,11 @@ nltk.download('punkt')
 document_count = 0  # total count of all documents
 urls = {}  # map of document_id to actual url
 BATCH_SIZE = 1_000  # number of documents to parse before offloading to disk
-MERGE_CHUNK_SIZE = 100_000  # number of lines to read at a time when merging files 
+MERGE_CHUNK_SIZE = 100_000  # number of lines to read at a time when merging files
+
+def compute_tf_idf(tf, idf):
+    global document_count
+    return tf * math.log(document_count/idf)
 
 def iterate_through_directory(directory):
     """Iterate through the directory and return a list of files"""
