@@ -7,6 +7,7 @@ import time
 import itertools
 import shutil
 from collections import Counter
+from collections import defaultdict
 from bs4 import BeautifulSoup
 import nltk
 from nltk.tokenize import word_tokenize
@@ -35,8 +36,30 @@ def get_text_from_html(html):
     soup = BeautifulSoup(html, "html.parser")
     return soup.get_text()
 
+def get_important_text_from_html(html):
+    """Get the important text from the html"""
+    soup = BeautifulSoup(html, "html.parser")
+    important_text = defaultdict(dict)
+    #html_tags = ['b', 'strong', 'title', 'h1', 'h2', 'h3']
+    html_tags = {'b':2, 'strong':2, 'title':5, 'h1':3, 'h2':3, 'h3':3}
+    for tag in html_tags.keys():
+        for found_text in soup.find_all(tag):
+            text_tokens = tokenize(found_text.text.strip())
+            for token,count in text_tokens.items():
+                important_text[token][tag]=count*html_tags[tag]
+
+    return important_text
+
+def get_anchor_text_from_html(html):
+    """Get the anchor text from the html"""
+    soup = BeautifulSoup(html, "html.parser")
+    anchor_text = []
+    for t in soup.find_all('a'):
+        anchor_text.append(t.text.strip())
+    return anchor_text
+
 def is_valid_token(input_token):
-    pattern = r'^[a-zA-Z0-9_.-!@#$%^&*()+=?\'\"]+$'
+    pattern = r'^[a-zA-Z0-9_.\-!@#$%^&*()+=?\'\"]+$'
     return bool(re.match(pattern, input_token))
 
 def tokenize(raw_text):
@@ -49,13 +72,13 @@ def tokenize(raw_text):
 
     # # remove non alphanumeric tokens
 
-    # tokens = [token for token in tokens if is_valid_token(token)]
+    tokens = [token for token in tokens if is_valid_token(token)]
 
-    # # remove tokens that are only 1 character long
-    # tokens = [token for token in tokens if len(token) > 1]
+    # remove tokens that are only 1 character long
+    tokens = [token for token in tokens if len(token) > 1]
 
-    # # lowercase all tokens
-    # tokens = [token.lower() for token in tokens]
+    # lowercase all tokens
+    tokens = [token.lower() for token in tokens]
 
     return Counter(tokens)
 
@@ -83,6 +106,23 @@ class Posting:
     def __repr__(self):
         return f"Posting({self._docid}, {self._tf}, {self._fields})"
 
+# extra credit similarity/exact
+page_tokens = dict()
+
+def similar(url, tokens):
+    if url not in page_tokens:
+        token_set = set(tokens) #get unique tokens for url
+        for value in page_tokens.values(): #go through all previously scraped pages
+            tokens_inter = value.intersection(token_set) #get intersection
+            if len(tokens_inter) > 0:
+                #check intersection/current tokenlist ratio, if over threshold return True(similar), else continue
+                if len(tokens_inter) / len(token_set) > 0.9: 
+                    return True
+        #add url and unique tokens to list
+        page_tokens[url] = token_set
+        return False #not similar
+    else:
+            return True
 
 def create_indexes(directory) -> None:
     """Create the indexes"""
@@ -104,15 +144,39 @@ def create_indexes(directory) -> None:
 
         document_count += 1
         urls[document_count] = url
+       
+        #parse out important tokens
+        important_text = get_important_text_from_html(html)
+
+        #parse out anchor tokens
+        #anchor_tokens = get_anchor_text_from_html(html)
 
         # parse out the tokens
         text = get_text_from_html(html)
         tokens = tokenize(text)
+
+        # duplicate page removal - extra credit, works for both exact and similar text
+        if similar(url, tokens.keys()):
+            #print(f'similar url: {url}')
+            continue
+
         for token, count in tokens.items(): # add each token to the index
             if token not in index:
                 index[token] = []
-            index[token].append(Posting(document_count, count, None))
-
+            if token in important_text:
+                index[token].append(Posting(document_count, count, important_text[token]))
+                important_text.pop(token)
+            else:
+                index[token].append(Posting(document_count, count, None))
+        
+        # print(index)
+        #time.sleep(30)
+        #adds tokens found in html tags that arent found in the text to the index
+        # for token in important_text:
+        #     if token not in index:
+        #         index[token] = []     
+        #     index[token].append(Posting(document_count, 0, important_text[token]))   
+        
         if document_count % 1000 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
 
@@ -148,6 +212,7 @@ def merge_indexes() -> int:
     out_file = open("index2.pickle", 'wb')
 
     output = dict()
+    freq = defaultdict(int)
     while len(completed_files) != len(batch_files): # loop through until all files are completed
         target = min([buff[0] for i, buff in enumerate(read_buffers) if i not in completed_files])
         output[target] = dict()
@@ -158,18 +223,29 @@ def merge_indexes() -> int:
 
             if buff[0] == target: # token match, tack it on and increase that buffer
                 for posting in buff[1]:
-                    output[target][posting.docid()] = posting.tf() * math.log(document_count/idf)
-
+                    #print(posting)
+                    fields_tf = 0 if posting.fields() == None else sum(posting.fields().values())
+                    output[target][posting.docid()] = posting.tf()+fields_tf # * math.log(document_count/idf)
+                    freq[target]+=1
                 try:
                     read_buffers[i] = pickle.load(batch_files[i])
                 except EOFError:
                     completed_files.add(i)
+        #checking target/freq/output
+        # print(f"target: {target}")
+        # print(f"freq: {freq}")
+        #print(f"output: {output}")
+        #time.sleep(5)
         index_length += 1
 
         if index_length % MERGE_CHUNK_SIZE == 0: # write to out file in chunks
             pickle.dump(output, out_file)
             print(f"Merged {index_length} tokens")
             output = dict()
+
+    for token in output:
+        idf = freq[token]
+        output[token].update({key: output[token][key] * math.log(document_count/idf) for key in output[token].keys()})
 
     pickle.dump(output, out_file)
 
