@@ -106,6 +106,24 @@ class Posting:
     def __repr__(self):
         return f"Posting({self._docid}, {self._tf}, {self._fields})"
 
+# extra credit similarity/exact
+page_tokens = dict()
+
+def similar(url, tokens):
+    if url not in page_tokens:
+        token_set = set(tokens) #get unique tokens for url
+        for value in page_tokens.values(): #go through all previously scraped pages
+            tokens_inter = value.intersection(token_set) #get intersection
+            if len(tokens_inter) > 0:
+                #check intersection/current tokenlist ratio, if over threshold return True(similar), else continue
+                if len(tokens_inter) / len(token_set) > 0.9: 
+                    return True
+        #add url and unique tokens to list
+        page_tokens[url] = token_set
+        return False #not similar
+    else:
+            return True
+
 def create_indexes(directory) -> None:
     """Create the indexes"""
     global document_count, urls
@@ -136,6 +154,12 @@ def create_indexes(directory) -> None:
         # parse out the tokens
         text = get_text_from_html(html)
         tokens = tokenize(text)
+
+        # duplicate page removal - extra credit, works for both exact and similar text
+        if similar(url, tokens.keys()):
+            #print(f'similar url: {url}')
+            continue
+
         for token, count in tokens.items(): # add each token to the index
             if token not in index:
                 index[token] = []
@@ -203,17 +227,13 @@ def merge_indexes() -> int:
                     fields_tf = 0 if posting.fields() == None else sum(posting.fields().values())
                     output[target][posting.docid()] = posting.tf()+fields_tf # * math.log(document_count/idf)
                     freq[target]+=1
-                    # print(f"target: {target}")
-                    # print(f"freq: {freq}")
-                    # print(f"output: {output}")
-                    # time.sleep(5)
                 try:
                     read_buffers[i] = pickle.load(batch_files[i])
                 except EOFError:
                     completed_files.add(i)
-        #checking target/freq/output currently
-        #print(f"target: {target}")
-        #print(f"freq: {freq}")
+        #checking target/freq/output
+        # print(f"target: {target}")
+        # print(f"freq: {freq}")
         #print(f"output: {output}")
         #time.sleep(5)
         index_length += 1
@@ -239,7 +259,7 @@ def merge_indexes() -> int:
 
 
 if __name__ == "__main__":
-    #create_indexes("DEV")
+    create_indexes("DEV")
     num_tokens = merge_indexes()
 
     print(f"Number of tokens: {num_tokens}")
