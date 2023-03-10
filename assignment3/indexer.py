@@ -2,6 +2,7 @@ import json
 import os
 import pickle
 import math
+import re
 import time
 import itertools
 from collections import Counter
@@ -29,6 +30,10 @@ def get_text_from_html(html):
     soup = BeautifulSoup(html, "html.parser")
     return soup.get_text()
 
+def is_valid_token(input_token):
+    pattern = r'^[a-zA-Z0-9_.-!@#$%^&*()+=?\'\"]+$'
+    return bool(re.match(pattern, input_token))
+
 def tokenize(raw_text):
     """Tokenize text with nltk and use stemming"""
     ps = PorterStemmer()
@@ -36,6 +41,17 @@ def tokenize(raw_text):
 
     # Stem tokens
     tokens = [ps.stem(token) for token in tokens]
+
+    # remove non alphanumeric tokens
+
+    tokens = [token for token in tokens if is_valid_token(token)]
+
+    # remove tokens that are only 1 character long
+    tokens = [token for token in tokens if len(token) > 1]
+
+    # lowercase all tokens
+    tokens = [token.lower() for token in tokens]
+
     return Counter(tokens)
 
 
@@ -78,7 +94,7 @@ def create_indexes(directory) -> None:
                 index[token] = []
             index[token].append(Posting(document_count, count, None))
 
-        if document_count % 100 == 0: # print checkpoint every 100 document
+        if document_count % 1000 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
 
         if document_count % BATCH_SIZE == 0: # offload batch to disk
@@ -106,6 +122,9 @@ def merge_indexes() -> int:
     read_buffers = []
     batch_files = []
     completed_files = set()
+
+    if not os.path.exists("batches"):
+        os.mkdir("batches")
 
     # open all the files and place the first line into the buffer
     for filename in os.listdir("batches"):
@@ -149,6 +168,7 @@ def merge_indexes() -> int:
 
 
 if __name__ == "__main__":
+    create_indexes("DEV")
     a = merge_indexes()
     print("num tokens:", a)
     # create_indexes("DEV")
