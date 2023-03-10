@@ -36,7 +36,7 @@ def get_text_from_html(html):
     return soup.get_text()
 
 def is_valid_token(input_token):
-    pattern = r'^[a-zA-Z0-9_.-!@#$%^&*()+=?\'\"]+$'
+    pattern = r'^[a-zA-Z0-9_.\-!@#$%^&*()+=?\'\"]+$'
     return bool(re.match(pattern, input_token))
 
 def tokenize(raw_text):
