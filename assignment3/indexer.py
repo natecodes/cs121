@@ -110,7 +110,7 @@ def similar(url, tokens):
         page_tokens[url] = token_set
         return False #not similar
     else:
-            return True
+        return True
 
 def create_indexes(directory) -> None:
     """Create the indexes"""
@@ -144,15 +144,14 @@ def create_indexes(directory) -> None:
         tokens = tokenize(text)
 
         # duplicate page removal - extra credit, works for both exact and similar text
-        if not similar(url, tokens.keys()):
-            for token, count in tokens.items(): # add each token to the index
-                if token not in index:
-                    index[token] = []
-                if token in important_text:
-                    index[token].append(Posting(document_count, count, important_text[token]))
-                    important_text.pop(token)
-                else:
-                    index[token].append(Posting(document_count, count, None))
+        for token, count in tokens.items(): # add each token to the index
+            if token not in index:
+                index[token] = []
+            if token in important_text:
+                index[token].append(Posting(document_count, count, important_text[token]))
+                important_text.pop(token)
+            else:
+                index[token].append(Posting(document_count, count, None))
         
         # print(index)
         #time.sleep(30)
