@@ -7,31 +7,25 @@ def search_request(request, index):
     if not request:
         return []
 
-    if index.get(request[0]) == None:
+    sorted_request = sorted(request, key=lambda x: len(index.get(x) or []))
+
+    if sorted_request[0] not in index:
         return []
 
-    search_result = set(index.get(request[0]))
-    
-    for token in request[1:]:
-        if index.get(token) == None:
-            return []
-
-        new_results = set(index.get(token))
-        new_search_result = set()
-
-        for new_result in new_results: # not at all optimized
-            for result in search_result: 
-                if new_result[0] == result[0]: # both tokens in the same url, add their count
-                    new_search_result.add((new_result[0], new_result[1] + result[1]))
-        
-        search_result = new_search_result
-    
-    return [result[0] for result in sorted(search_result, key=lambda x:x[1], reverse=True)]
+    search_result = index[sorted_request[0]]
 
 
-def get_index():
+    for token in sorted_request[1:]:
+        new_results = index[token]
+        # intersect new_results and search_result
+        search_result = {docId: search_result[docId] + new_results[docId] for docId in search_result if docId in new_results }
+
+    return [result[0] for result in sorted(search_result.items(), key=lambda x:x[1], reverse=True)]
+
+
+def load_pickle_as_dict(file_path):
     index = dict()
-    with open('index2.pickle', 'rb') as file:
+    with open(file_path, 'rb') as file:
         index |= pickle.load(file)
     return index
     
@@ -42,21 +36,22 @@ def create_temp_index():
 
 if __name__ == '__main__':
     print("Loading index...")
-    index = get_index()
+    index = load_pickle_as_dict('index2.pickle')
+    urls = load_pickle_as_dict('urls.pickle')
     ps = PorterStemmer()
     print("Loaded!\n")
     
-    # while True:
-    #     request = input('Query: ')
-    #     if(request == "exit"):
-    #         break
+    while True:
+        request = input('Query: ')
+        if(request == "exit"):
+            break
         
-    #     start = time.time()
-    #     tokens = [ps.stem(token) for token in request.strip().split(" ")]
-    #     results = search_request(tokens, index)[:5]
+        start = time.time()
+        tokens = [ps.stem(token) for token in request.strip().split(" ")]
+        results = search_request(tokens, index)[:5]
 
-    #     if(results == []):
-    #         print("No results found!")
-    #     else:
-    #         print("\n".join([f"... {i}) {result}" for i, result in enumerate(results, start=1)]))
-    #     print(f"Found in ~{int((time.time() - start) * 1000)} milliseconds.\n")
+        if(results == []):
+            print("No results found!")
+        else:
+            print("\n".join([f"... {i}) {urls[docId]}" for i, docId in enumerate(results, start=1)]))
+        print(f"Found in ~{int((time.time() - start) * 1000)} milliseconds.\n")
