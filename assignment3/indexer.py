@@ -19,9 +19,36 @@ urls = {}  # map of document_id to actual url
 BATCH_SIZE = 10_000  # number of documents to parse before offloading to disk
 MERGE_CHUNK_SIZE = 1_000_000  # number of lines to read at a time when merging files
 
+
+
+# TF-IDF COMPUTING
 def compute_tf_idf(tf, idf):
     global document_count
     return tf * math.log(document_count/idf)
+
+def get_tf(document):
+    tf = {}
+    ps = PorterStemmer()
+    document = word_tokenize(document.lower().replace('\\',''))
+    stemmed_words = [ps.stem(word) for word in document]
+
+    for word in stemmed_words:
+        if word in tf:
+            tf[word] += 1 
+        else:
+            tf[word] = 1
+    for word in tf:
+        tf[word] = math.log(tf[word]) + 1
+    return tf
+
+# def put_tf_in_index(tf: dict, doc_id: int):
+    # for word in tf:
+        # if word in inverted_index:
+            # inverted_index[word][doc_id] = tf[word]
+        # else:
+            # inverted_index[word] = {doc_id: tf[word]}
+
+#######################################################################
 
 def iterate_through_directory(directory):
     """Iterate through the directory and return a list of files"""
