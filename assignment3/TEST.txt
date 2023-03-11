@@ -1,30 +1,43 @@
 Test Queries
 ------------
+Good queries:
+ 1) cristina lopes
+ 2) ACM
+ 3) apple phone
+ 4) java coffee
+ 5) test
+ 6) bro
+ 7) something
+ 8) software
+ 9) engineering
+10) alex thornton
 
-Long-tail queries: queries with many keywords
-software engineering computer science coding python java
-How to use recursion to calculate the factorial of a large number in Java
-who is the dean of ics
+Bad queries:
+ 1) master of software engineering
+ 2) machine learning
+ 3) software engineering computer science coding python java
+ 4) how to use recursion to calculate the factorial of a large number in Java
+ 5) who is the dean of ics
+ 6) apple computer
+ 7) good class uci
+ 8) programming help
+ 9) java help
+10) Boolean logic OR truth tables
 
+How We Improved
+---------------
+Almost all queries (including many of the good ones) had pretty poor results. This was because
+we only were ranking by raw frequency of terms, so documents with a ton of random words
+would filter to the top. To fix this, we implemented tf-idf scoring so only documents that
+actually use the more unique keywords ranked at the top.
 
-Ambiguous queries: queries that have multiple possible meanings
-apple computer
-apple phone
-java coffee
-java
+What made the bad queries especially bad was their speed, they all took at least a few seconds
+to run. Our two greatest fixes for speed were restructuring the index and processing query
+tokens in order of frequency. To restructure the index, instead of mapping tokens to a list of
+documents and counts, it maps to a dictionary that in turn maps documents to their tf-idf score
+for faster intersection operations. Also, we made a separate file for mapping document ids to
+the actual url to make the index files smaller.
 
-
-Misspelled queries: queries with spelling mistakes or typos
-cmputer scence
-pythom programming
-
-Vague queries: queries that are vague or incomplete
-programming help
-java help
-python help
-good class uci
-
-
-Synonym query: queries that contain a logical operator or synonym
-Boolean logic OR truth tables
-boolean logic and truth tables
+One final change that made the search faster was instead of loading the entire index into memory,
+we built the index into multiple files. That way, the search script only needed to load in a
+lookup table to see what index to load at runtime.
