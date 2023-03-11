@@ -1,3 +1,30 @@
 Test Queries
 ------------
-...
+
+Long-tail queries: queries with many keywords
+software engineering computer science coding python java
+How to use recursion to calculate the factorial of a large number in Java
+who is the dean of ics
+
+
+Ambiguous queries: queries that have multiple possible meanings
+apple computer
+apple phone
+java coffee
+java
+
+
+Misspelled queries: queries with spelling mistakes or typos
+cmputer scence
+pythom programming
+
+Vague queries: queries that are vague or incomplete
+programming help
+java help
+python help
+good class uci
+
+
+Synonym query: queries that contain a logical operator or synonym
+Boolean logic OR truth tables
+boolean logic and truth tables
