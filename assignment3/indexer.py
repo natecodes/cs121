@@ -65,7 +65,7 @@ def tokenize(raw_text):
     tokens = []
     for token in word_tokenize(raw_text):
         stemmed = ps.stem(token) # stem tokens
-        if is_valid_token(stemmed) and len(stemmed) > 1: # only alphanumeric and 2+ char tokens
+        if stemmed.isalnum() and len(stemmed) > 1: # only alphanumeric and 2+ char tokens
             tokens.append(token.lower()) # convert to lowercase
 
     return Counter(tokens)
