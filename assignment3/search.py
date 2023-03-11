@@ -27,7 +27,7 @@ def search_request(request, index_lookup):
         # intersect new_results and search_result
         search_result = {docId: search_result[docId] + new_results[docId] for docId in search_result if docId in new_results }
 
-    return [result[0] for result in sorted(search_result.items(), key=lambda x:x[1], reverse=True)]
+    return [result for result in sorted(search_result.items(), key=lambda x:x[1], reverse=True)]
 
 
 def load_pickle_as_dict(file_path):
@@ -59,11 +59,11 @@ if __name__ == '__main__':
             break
         
         start = time.time()
-        tokens = [ps.stem(token) for token in request.strip().split(" ")]
-        results = search_request(tokens, index_lookup)[:5]
+        tokens = {ps.stem(token) for token in request.strip().split(" ") if len(ps.stem(token)) > 1}
+        results = search_request(tokens, index_lookup)[:10]
 
         if(results == []):
             print("No results found!")
         else:
-            print("\n".join([f"... {i}) {urls[docId]}" for i, docId in enumerate(results, start=1)]))
+            print("\n".join([f"... {i}) {urls[docId[0]]}" for i, docId in enumerate(results, start=1)]))
         print(f"Found in ~{int((time.time() - start) * 1000)} milliseconds.\n")
