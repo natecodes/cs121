@@ -58,10 +58,6 @@ def get_anchor_text_from_html(html):
         anchor_text.append(t.text.strip())
     return anchor_text
 
-def is_valid_token(input_token):
-    pattern = r'^[a-zA-Z0-9_.\-!@#$%^&*()+=?\'\"]+$'
-    return bool(re.match(pattern, input_token))
-
 def tokenize(raw_text):
     """Tokenize text with nltk and use stemming"""
     ps = PorterStemmer()
@@ -148,18 +144,15 @@ def create_indexes(directory) -> None:
         tokens = tokenize(text)
 
         # duplicate page removal - extra credit, works for both exact and similar text
-        if similar(url, tokens.keys()):
-            #print(f'similar url: {url}')
-            continue
-
-        for token, count in tokens.items(): # add each token to the index
-            if token not in index:
-                index[token] = []
-            if token in important_text:
-                index[token].append(Posting(document_count, count, important_text[token]))
-                important_text.pop(token)
-            else:
-                index[token].append(Posting(document_count, count, None))
+        if not similar(url, tokens.keys()):
+            for token, count in tokens.items(): # add each token to the index
+                if token not in index:
+                    index[token] = []
+                if token in important_text:
+                    index[token].append(Posting(document_count, count, important_text[token]))
+                    important_text.pop(token)
+                else:
+                    index[token].append(Posting(document_count, count, None))
         
         # print(index)
         #time.sleep(30)
