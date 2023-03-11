@@ -40,9 +40,9 @@ def load_pickle_as_dict(file_path):
             except EOFError:
                 break
     return index
-    
 
-def create_temp_index(): 
+
+def create_temp_index():
     return { "a":[("url1",10),("url2", 20),("url3", 5)], "b":[("url2",4)], "c":[("url1",9),("url2",3)], "d": [("url1",1)]}
 
 
@@ -52,12 +52,12 @@ if __name__ == '__main__':
     index_lookup = load_pickle_as_dict('index_lookup.pickle')
     ps = PorterStemmer()
     print("Loaded!\n")
-    
+
     while True:
         request = input('Query: ')
         if(request == "exit"):
             break
-        
+
         start = time.time()
         tokens = {ps.stem(token) for token in request.strip().split(" ") if len(ps.stem(token)) > 1}
         results = search_request(tokens, index_lookup)[:10]

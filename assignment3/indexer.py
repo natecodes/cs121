@@ -34,7 +34,7 @@ def get_tf(document):
 
     for word in stemmed_words:
         if word in tf:
-            tf[word] += 1 
+            tf[word] += 1
         else:
             tf[word] = 1
     for word in tf:
@@ -131,7 +131,7 @@ def similar(url, tokens):
             tokens_inter = value.intersection(token_set) #get intersection
             if len(tokens_inter) > 0:
                 #check intersection/current tokenlist ratio, if over threshold return True(similar), else continue
-                if len(tokens_inter) / len(token_set) > 0.9: 
+                if len(tokens_inter) / len(token_set) > 0.9:
                     return True
         #add url and unique tokens to list
         page_tokens[url] = token_set
@@ -143,7 +143,7 @@ def create_indexes(directory) -> None:
     """Create the indexes"""
     global document_count, urls
     index = {}
-    
+
     # Prepare the batches directory
     if os.path.exists("batches"):
         shutil.rmtree("batches/")
@@ -159,7 +159,7 @@ def create_indexes(directory) -> None:
 
         document_count += 1
         urls[document_count] = url
-       
+
         #parse out important tokens
         important_text = get_important_text_from_html(html)
 
@@ -179,15 +179,15 @@ def create_indexes(directory) -> None:
                 important_text.pop(token)
             else:
                 index[token].append(Posting(document_count, count, None))
-        
+
         # print(index)
         #time.sleep(30)
         #adds tokens found in html tags that arent found in the text to the index
         # for token in important_text:
         #     if token not in index:
-        #         index[token] = []     
-        #     index[token].append(Posting(document_count, 0, important_text[token]))   
-        
+        #         index[token] = []
+        #     index[token].append(Posting(document_count, 0, important_text[token]))
+
         if document_count % 100 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
 
@@ -235,7 +235,7 @@ def merge_indexes() -> int:
             min_token = target
         output[target] = dict()
         df = 0
-        
+
         for i, buff in enumerate(read_buffers): # find any matches for the next token
             if i in completed_files:
                 continue
@@ -295,7 +295,7 @@ def merge_indexes() -> int:
 if __name__ == "__main__":
     # num_tokens = merge_indexes()
     # print(f"Number of tokens: {num_tokens}")
-    
+
     # with open("batches/batch1.pickle", "rb") as file:
     #     while p := pickle.load(file):
     #         print(p)
@@ -307,9 +307,9 @@ if __name__ == "__main__":
     #             index |= pickle.load(file)
     #         except EOFError:
     #             break
-    
-    # print(index["zhong"])    
-    # print(index["zhang"])    
+
+    # print(index["zhong"])
+    # print(index["zhang"])
     # print(index["yes"])
     # for i, key in enumerate(index):
     #     print(f"{key}: {index[key]}")
