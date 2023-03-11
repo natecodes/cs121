@@ -3,20 +3,27 @@ import pickle
 from nltk.stem import PorterStemmer
 
 
-def search_request(request, index):
+def get_from_lookup(index_lookup, token):
+    for token_range in index_lookup:
+        if token > token_range[0] and token < token_range[1]:
+            with open(index_lookup[token_range], 'rb') as index_file:
+                return pickle.load(index_file).get(token)
+    return []
+
+
+def search_request(request, index_lookup):
     if not request:
         return []
 
-    sorted_request = sorted(request, key=lambda x: len(index.get(x) or []))
+    sorted_request = sorted(request, key=lambda x: len(get_from_lookup(index_lookup, x) or []))
 
-    if sorted_request[0] not in index:
+    search_result = get_from_lookup(index_lookup, sorted_request[0])
+
+    if not search_result:
         return []
 
-    search_result = index[sorted_request[0]]
-
-
     for token in sorted_request[1:]:
-        new_results = index[token]
+        new_results = get_from_lookup(index_lookup, token)
         # intersect new_results and search_result
         search_result = {docId: search_result[docId] + new_results[docId] for docId in search_result if docId in new_results }
 
@@ -24,6 +31,7 @@ def search_request(request, index):
 
 
 def load_pickle_as_dict(file_path):
+    """Continously load and union a pickled dictionary into one dictionary"""
     index = dict()
     with open(file_path, 'rb') as file:
         while True:
@@ -40,8 +48,8 @@ def create_temp_index():
 
 if __name__ == '__main__':
     print("Loading index...")
-    index = load_pickle_as_dict('index2_1.pickle')
     urls = load_pickle_as_dict('urls.pickle')
+    index_lookup = load_pickle_as_dict('index_lookup.pickle')
     ps = PorterStemmer()
     print("Loaded!\n")
     
@@ -52,7 +60,7 @@ if __name__ == '__main__':
         
         start = time.time()
         tokens = [ps.stem(token) for token in request.strip().split(" ")]
-        results = search_request(tokens, index)[:5]
+        results = search_request(tokens, index_lookup)[:5]
 
         if(results == []):
             print("No results found!")

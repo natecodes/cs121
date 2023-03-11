@@ -16,8 +16,8 @@ nltk.download('punkt')
 
 document_count = 0  # total count of all documents
 urls = {}  # map of document_id to actual url
-BATCH_SIZE = 1_000  # number of documents to parse before offloading to disk
-MERGE_CHUNK_SIZE = 100_000  # number of lines to read at a time when merging files
+BATCH_SIZE = 10_000  # number of documents to parse before offloading to disk
+MERGE_CHUNK_SIZE = 1_000_000  # number of lines to read at a time when merging files
 
 def compute_tf_idf(tf, idf):
     global document_count
@@ -183,22 +183,30 @@ def sort_and_write_to_disk(index: dict, filename: str) -> None:
             pickle.dump((token, sorted(index[token])), batch)
 
 def merge_indexes() -> int:
-    """Merge all temporary indices in the batches/ directory into one index, returning its length."""
+    """Merge all temporary indices in the batches/ directory into a series of indexes, returning its length."""
     index_length = 0
     read_buffers = []
     batch_files = []
     completed_files = set()
+    index_lookup = {}
+
+    if os.path.exists("indexes"):
+        shutil.rmtree("indexes/")
+    os.mkdir("indexes")
 
     # open all the files and place the first line into the buffer
     for i, filename in enumerate(os.listdir("batches")):
         batch_file = open(f"batches/{filename}", 'rb')
         batch_files.append(batch_file)
         read_buffers.append(pickle.load(batch_file))
-    out_file = open("index2.pickle", 'wb')
+
 
     output = dict()
+    min_token = None
     while len(completed_files) != len(batch_files): # loop through until all files are completed
         target = min([buff[0] for i, buff in enumerate(read_buffers) if i not in completed_files])
+        if min_token is None:
+            min_token = target
         output[target] = dict()
         df = 0
         
@@ -208,9 +216,8 @@ def merge_indexes() -> int:
 
             if buff[0] == target: # token match, tack it on and increase that buffer
                 for posting in buff[1]:
-                    #print(posting)
                     fields_tf = 0 if posting.fields() == None else sum(posting.fields().values())
-                    output[target][posting.docid()] = 1 + math.log(posting.tf()+fields_tf) # * math.log(document_count/idf)
+                    output[target][posting.docid()] = 1 + math.log(posting.tf()+fields_tf)
                     df += 1
                 try:
                     read_buffers[i] = pickle.load(batch_files[i])
@@ -228,7 +235,12 @@ def merge_indexes() -> int:
             output[target][doc_id] *= math.log(document_count / df)
 
         if index_length % MERGE_CHUNK_SIZE == 0: # write to out file in chunks
-            pickle.dump(output, out_file)
+            index_file = f"indexes/index{index_length // MERGE_CHUNK_SIZE}.pickle"
+            with open(index_file, "wb") as out_file:
+                pickle.dump(output, out_file)
+            index_lookup[(min_token, target)] = index_file
+            min_token = None
+
             print(f"Merged {index_length} tokens")
             output = dict()
 
@@ -236,7 +248,14 @@ def merge_indexes() -> int:
     #     idf = freq[token]
     #     output[token].update({key: output[token][key] * math.log(document_count/idf) for key in output[token].keys()})
 
-    pickle.dump(output, out_file)
+    index_file = f"indexes/index{math.ceil(index_length / MERGE_CHUNK_SIZE)}.pickle"
+    with open(index_file, "wb") as out_file:
+        pickle.dump(output, out_file)
+    index_lookup[(min_token, target)] = index_file
+    min_token = None
+
+    with open("index_lookup.pickle", "wb") as lookup_file:
+        pickle.dump(index_lookup, lookup_file)
 
     # close out the files
     for batch_file in batch_files:
