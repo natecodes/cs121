@@ -26,7 +26,11 @@ def search_request(request, index):
 def load_pickle_as_dict(file_path):
     index = dict()
     with open(file_path, 'rb') as file:
-        index |= pickle.load(file)
+        while True:
+            try:
+                index |= pickle.load(file)
+            except EOFError:
+                break
     return index
     
 
@@ -36,7 +40,7 @@ def create_temp_index():
 
 if __name__ == '__main__':
     print("Loading index...")
-    index = load_pickle_as_dict('index2.pickle')
+    index = load_pickle_as_dict('index2_1.pickle')
     urls = load_pickle_as_dict('urls.pickle')
     ps = PorterStemmer()
     print("Loaded!\n")

@@ -197,10 +197,10 @@ def merge_indexes() -> int:
     out_file = open("index2.pickle", 'wb')
 
     output = dict()
-    freq = defaultdict(int)
     while len(completed_files) != len(batch_files): # loop through until all files are completed
         target = min([buff[0] for i, buff in enumerate(read_buffers) if i not in completed_files])
         output[target] = dict()
+        df = 0
         
         for i, buff in enumerate(read_buffers): # find any matches for the next token
             if i in completed_files:
@@ -210,8 +210,8 @@ def merge_indexes() -> int:
                 for posting in buff[1]:
                     #print(posting)
                     fields_tf = 0 if posting.fields() == None else sum(posting.fields().values())
-                    output[target][posting.docid()] = posting.tf()+fields_tf # * math.log(document_count/idf)
-                    freq[target]+=1
+                    output[target][posting.docid()] = 1 + math.log(posting.tf()+fields_tf) # * math.log(document_count/idf)
+                    df += 1
                 try:
                     read_buffers[i] = pickle.load(batch_files[i])
                 except EOFError:
@@ -220,17 +220,21 @@ def merge_indexes() -> int:
         # print(f"target: {target}")
         # print(f"freq: {freq}")
         #print(f"output: {output}")
-        #time.sleep(5)
+        #time.sleep(5)z
         index_length += 1
+
+        # update tf to tfidf
+        for doc_id in output[target]:
+            output[target][doc_id] *= math.log(document_count / df)
 
         if index_length % MERGE_CHUNK_SIZE == 0: # write to out file in chunks
             pickle.dump(output, out_file)
             print(f"Merged {index_length} tokens")
             output = dict()
 
-    for token in output:
-        idf = freq[token]
-        output[token].update({key: output[token][key] * math.log(document_count/idf) for key in output[token].keys()})
+    # for token in output:
+    #     idf = freq[token]
+    #     output[token].update({key: output[token][key] * math.log(document_count/idf) for key in output[token].keys()})
 
     pickle.dump(output, out_file)
 
@@ -244,6 +248,29 @@ def merge_indexes() -> int:
 
 
 if __name__ == "__main__":
+    # num_tokens = merge_indexes()
+    # print(f"Number of tokens: {num_tokens}")
+    
+    # with open("batches/batch1.pickle", "rb") as file:
+    #     while p := pickle.load(file):
+    #         print(p)
+
+    # index = dict()
+    # with open("index2.pickle", 'rb') as file:
+    #     while True:
+    #         try:
+    #             index |= pickle.load(file)
+    #         except EOFError:
+    #             break
+    
+    # print(index["zhong"])    
+    # print(index["zhang"])    
+    # print(index["yes"])
+    # for i, key in enumerate(index):
+    #     print(f"{key}: {index[key]}")
+    #     if i > 100:
+    #         break
+
     create_indexes("DEV")
     num_tokens = merge_indexes()
 
