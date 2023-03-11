@@ -65,20 +65,12 @@ def is_valid_token(input_token):
 def tokenize(raw_text):
     """Tokenize text with nltk and use stemming"""
     ps = PorterStemmer()
-    tokens = word_tokenize(raw_text)
 
-    # Stem tokens
-    tokens = [ps.stem(token) for token in tokens]
-
-    # # remove non alphanumeric tokens
-
-    tokens = [token for token in tokens if is_valid_token(token)]
-
-    # remove tokens that are only 1 character long
-    tokens = [token for token in tokens if len(token) > 1]
-
-    # lowercase all tokens
-    tokens = [token.lower() for token in tokens]
+    tokens = []
+    for token in word_tokenize(raw_text):
+        stemmed = ps.stem(token) # stem tokens
+        if is_valid_token(stemmed) and len(stemmed) > 1: # only alphanumeric and 2+ char tokens
+            tokens.append(token.lower()) # convert to lowercase
 
     return Counter(tokens)
 
@@ -177,7 +169,7 @@ def create_indexes(directory) -> None:
         #         index[token] = []     
         #     index[token].append(Posting(document_count, 0, important_text[token]))   
         
-        if document_count % 1000 == 0: # print checkpoint every 100 document
+        if document_count % 100 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
 
         if document_count % BATCH_SIZE == 0: # offload batch to disk
