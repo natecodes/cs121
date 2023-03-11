@@ -17,7 +17,7 @@ nltk.download('punkt')
 document_count = 0  # total count of all documents
 urls = {}  # map of document_id to actual url
 BATCH_SIZE = 10_000  # number of documents to parse before offloading to disk
-MERGE_CHUNK_SIZE = 1_000_000  # number of lines to read at a time when merging files
+MERGE_CHUNK_SIZE = 10_000  # number of lines to read at a time when merging files
 
 
 
@@ -93,7 +93,7 @@ def tokenize(raw_text):
     for token in word_tokenize(raw_text):
         stemmed = ps.stem(token) # stem tokens
         if stemmed.isalnum() and len(stemmed) > 1: # only alphanumeric and 2+ char tokens
-            tokens.append(token.lower()) # convert to lowercase
+            tokens.append(stemmed.lower()) # convert to lowercase
 
     return Counter(tokens)
 

@@ -59,8 +59,8 @@ if __name__ == '__main__':
             break
         
         start = time.time()
-        tokens = [ps.stem(token) for token in request.strip().split(" ")]
-        results = search_request(tokens, index_lookup)[:5]
+        tokens = {ps.stem(token) for token in request.strip().split(" ") if len(ps.stem(token)) > 1}
+        results = search_request(tokens, index_lookup)[:10]
 
         if(results == []):
             print("No results found!")
