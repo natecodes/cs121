@@ -20,36 +20,6 @@ BATCH_SIZE = 10_000  # number of documents to parse before offloading to disk
 MERGE_CHUNK_SIZE = 10_000  # number of lines to read at a time when merging files
 
 
-
-# TF-IDF COMPUTING
-def compute_tf_idf(tf, idf):
-    global document_count
-    return tf * math.log(document_count/idf)
-
-def get_tf(document):
-    tf = {}
-    ps = PorterStemmer()
-    document = word_tokenize(document.lower().replace('\\',''))
-    stemmed_words = [ps.stem(word) for word in document]
-
-    for word in stemmed_words:
-        if word in tf:
-            tf[word] += 1
-        else:
-            tf[word] = 1
-    for word in tf:
-        tf[word] = math.log(tf[word]) + 1
-    return tf
-
-# def put_tf_in_index(tf: dict, doc_id: int):
-    # for word in tf:
-        # if word in inverted_index:
-            # inverted_index[word][doc_id] = tf[word]
-        # else:
-            # inverted_index[word] = {doc_id: tf[word]}
-
-#######################################################################
-
 def iterate_through_directory(directory):
     """Iterate through the directory and return a list of files"""
     files = []
@@ -180,14 +150,6 @@ def create_indexes(directory) -> None:
             else:
                 index[token].append(Posting(document_count, count, None))
 
-        # print(index)
-        #time.sleep(30)
-        #adds tokens found in html tags that arent found in the text to the index
-        # for token in important_text:
-        #     if token not in index:
-        #         index[token] = []
-        #     index[token].append(Posting(document_count, 0, important_text[token]))
-
         if document_count % 100 == 0: # print checkpoint every 100 document
             print("Processed", document_count, "documents")
 
@@ -216,6 +178,7 @@ def merge_indexes() -> int:
     completed_files = set()
     index_lookup = {}
 
+    # prepare the indexes/ directory
     if os.path.exists("indexes"):
         shutil.rmtree("indexes/")
     os.mkdir("indexes")
@@ -249,11 +212,7 @@ def merge_indexes() -> int:
                     read_buffers[i] = pickle.load(batch_files[i])
                 except EOFError:
                     completed_files.add(i)
-        #checking target/freq/output
-        # print(f"target: {target}")
-        # print(f"freq: {freq}")
-        #print(f"output: {output}")
-        #time.sleep(5)z
+                    
         index_length += 1
 
         # update tf to tfidf
@@ -270,16 +229,14 @@ def merge_indexes() -> int:
             print(f"Merged {index_length} tokens")
             output = dict()
 
-    # for token in output:
-    #     idf = freq[token]
-    #     output[token].update({key: output[token][key] * math.log(document_count/idf) for key in output[token].keys()})
-
+    # write the last chunk to an index
     index_file = f"indexes/index{math.ceil(index_length / MERGE_CHUNK_SIZE)}.pickle"
     with open(index_file, "wb") as out_file:
         pickle.dump(output, out_file)
     index_lookup[(min_token, target)] = index_file
     min_token = None
 
+    # pickle the index lookup
     with open("index_lookup.pickle", "wb") as lookup_file:
         pickle.dump(index_lookup, lookup_file)
 
@@ -293,32 +250,11 @@ def merge_indexes() -> int:
 
 
 if __name__ == "__main__":
-    # num_tokens = merge_indexes()
-    # print(f"Number of tokens: {num_tokens}")
-
-    # with open("batches/batch1.pickle", "rb") as file:
-    #     while p := pickle.load(file):
-    #         print(p)
-
-    # index = dict()
-    # with open("index2.pickle", 'rb') as file:
-    #     while True:
-    #         try:
-    #             index |= pickle.load(file)
-    #         except EOFError:
-    #             break
-
-    # print(index["zhong"])
-    # print(index["zhang"])
-    # print(index["yes"])
-    # for i, key in enumerate(index):
-    #     print(f"{key}: {index[key]}")
-    #     if i > 100:
-    #         break
-
+    # create and merge the indexes
     create_indexes("DEV")
     num_tokens = merge_indexes()
 
+    # print out data for M1
     print(f"Number of tokens: {num_tokens}")
     print(f"Number of words: {document_count}")
 

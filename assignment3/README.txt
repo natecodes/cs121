@@ -15,4 +15,8 @@ Running the search from command line:
  - type "exit" to stop the search
 
 Running the search with Web GUI:
-[Fred will add this later]
+ - the Web GUI is a Next.js project bootstrapped with "create-next-app"
+ - run "python server.py" from the command line to start the Python server
+ - run "yarn install" from the command line to install the necessary packages
+ - run "yarn dev" from the command line to run the development server
+ - open http://localhost:3000 in your browser to see the result.
